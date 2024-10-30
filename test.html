@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>宠物游戏测试</title>
+    <style>
+        .status-container {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+        .button-container {
+            margin: 20px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+        .emotion {
+            color: #e44d26;
+            font-weight: bold;
+        }
+        .action {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .index {
+            color: #666;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-container">
+        <h2>宠物状态：</h2>
+        <pre id="status"></pre>
+        <h3>当前情绪：<span id="emotion" class="emotion"></span> <span id="emotion-index" class="index"></span></h3>
+        <h3>当前行为：<span id="action" class="action"></span> <span id="action-index" class="index"></span></h3>
+        <h3>最近响应：<span id="response" class="action"></span> <span id="response-index" class="index"></span></h3>
+        <h3>最后更新：<span id="last-update"></span></h3>
+    </div>
+    
+    <div class="button-container">
+        <button onclick="performAction('feed')">喂食</button>
+        <button onclick="performAction('pet')">抚摸</button>
+        <button onclick="performAction('heal')">医疗</button>
+        <button onclick="performAction('hit')">打击</button>
+        <button onclick="performAction('shake')">摇晃</button>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api/pet';
+
+        async function getStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                // 更新状态显示
+                document.getElementById('status').textContent = 
+                    JSON.stringify(data.status, null, 2);
+                
+                // 更新情绪显示
+                document.getElementById('emotion').textContent = 
+                    `${data.emotion.state} (${data.emotion.level})`;
+                document.getElementById('emotion-index').textContent = 
+                    `[索引: ${data.emotion.index}]`;
+                
+                // 更新行为显示
+                document.getElementById('action').textContent = 
+                    data.action.state;
+                document.getElementById('action-index').textContent = 
+                    `[索引: ${data.action.index}]`;
+                
+                // 清除响应显示
+                document.getElementById('response').textContent = '';
+                document.getElementById('response-index').textContent = '';
+                
+                // 更新最后更新时间
+                const lastUpdate = new Date(data.last_update * 1000);
+                document.getElementById('last-update').textContent = 
+                    lastUpdate.toLocaleString();
+            } catch (error) {
+                console.error('获取状态失败:', error);
+            }
+        }
+
+        async function performAction(action) {
+            try {
+                const response = await fetch(`${API_BASE}/action`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: action })
+                });
+                
+                const data = await response.json();
+                
+                // 更新状态显示
+                document.getElementById('status').textContent = 
+                    JSON.stringify(data.status, null, 2);
+                
+                // 更新情绪显示
+                document.getElementById('emotion').textContent = 
+                    `${data.emotion.state} (${data.emotion.level})`;
+                document.getElementById('emotion-index').textContent = 
+                    `[索引: ${data.emotion.index}]`;
+                
+                // 更新行为显示
+                document.getElementById('action').textContent = 
+                    data.action.state;
+                document.getElementById('action-index').textContent = 
+                    `[索引: ${data.action.index}]`;
+                
+                // 更新响应显示
+                if (data.response) {
+                    document.getElementById('response').textContent = 
+                        data.response.state;
+                    document.getElementById('response-index').textContent = 
+                        `[索引: ${data.response.index}]`;
+                }
+
+                // 显示操作结果消息
+                if (data.success) {
+                    console.log(`${action} 操作成功:`, data.message);
+                } else {
+                    console.log(`${action} 操作失败:`, data.message);
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error(`${action} 请求失败:`, error);
+            }
+        }
+
+        // 页面加载时获取初始状态
+        window.onload = getStatus;
+    </script>
+</body>
+</html>
